@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#2563eb">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="تيم ليدر أحمد خالد">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>تيم ليدر أحمد خالد</title>
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon-192.svg">
+</head>
+<body>
+<header class="topbar">
+  <div class="container flex align-center justify-between">
+    <h1 class="app-title">تيم ليدر أحمد خالد</h1>
+    <div class="topbar-actions">
+      <select id="themeSelect" class="theme-select">
+        <option value="light">أبيض</option>
+        <option value="dark">أسود</option>
+        <option value="purple">بنفسجي فاتح</option>
+      </select>
+      <button class="btn btn-primary" id="btnAddDriver">إضافة سائق جديد</button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <div class="toolbar">
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="البحث باسم السائق أو رقم الهاتف...">
+    </div>
+    <div class="filter-group">
+      <select id="statusFilter">
+        <option value="all">جميع الحالات</option>
+        <option value="active">نشط</option>
+        <option value="inactive">غير نشط</option>
+      </select>
+    </div>
+    <div class="toolbar-actions">
+      <button class="btn btn-outline" id="btnExport">تصدير نسخة احتياطية</button>
+      <button class="btn btn-outline" id="btnImport">استعادة نسخة احتياطية</button>
+      <input type="file" id="importFile" accept=".json" style="display:none">
+    </div>
+  </div>
+
+  <div id="driversGrid" class="drivers-grid"></div>
+  <div id="emptyState" class="empty-state hidden">لم يتم العثور على أي سائقين.</div>
+</main>
+
+<div class="modal hidden" id="driverModal">
+  <div class="modal-backdrop" id="modalBackdrop"></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="modalTitle">إضافة سائق</h2>
+      <button class="btn-close" id="btnCloseModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="driverForm">
+        <input type="hidden" id="driverId">
+        <div class="form-section basic-section">
+          <div class="form-group">
+            <label>الاسم الكامل</label>
+            <input type="text" id="inputFullName" required placeholder="أدخل الاسم الكامل للسائق">
+          </div>
+          <div class="form-group">
+            <label>رقم الهاتف</label>
+            <input type="tel" id="inputPhone" required placeholder="مثال: 05xxxxxxxx">
+          </div>
+          <div class="form-group">
+            <label>الحالة</label>
+            <select id="inputStatus">
+              <option value="active">نشط</option>
+              <option value="inactive">غير نشط</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>صور السائق (يمكن رفع عدة صور)</label>
+            <input type="file" id="inputPhotos" multiple accept="image/*">
+            <div class="photo-previews" id="photoPreviews"></div>
+            <div class="form-hint">يتم حفظ الصور محلياً ضمن قاعدة بيانات المتصفح.</div>
+          </div>
+        </div>
+
+        <div class="form-section advanced-section hidden">
+          <div class="accordion">
+            <div class="accordion-item">
+              <div class="accordion-header" onclick="toggleAccordion(this)">
+                📋 الحضور / الغياب / التأخير / أخرى
+              </div>
+              <div class="accordion-content">
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">
+                  <select id="attType" style="flex:1;min-width:120px;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-family:inherit;">
+                    <option value="absent">غياب</option>
+                    <option value="late">تأخير</option>
+                    <option value="other">أخرى</option>
+                  </select>
+                  <input type="text" id="attNote" placeholder="ملاحظة" style="flex:1;min-width:150px;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-family:inherit;">
+                  <button type="button" id="btnAddAtt" class="btn btn-sm btn-secondary">إضافة</button>
+                </div>
+                <div id="attList" class="record-list" style="margin-top:8px;"></div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <div class="accordion-header" onclick="toggleAccordion(this)">
+                💰 المبلغ المطلوب عليه
+              </div>
+              <div class="accordion-content">
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">
+                  <input type="number" id="inputAmountDue" placeholder="المبلغ" style="flex:1;min-width:100px;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-family:inherit;">
+                  <input type="text" id="amountNote" placeholder="ملاحظة" style="flex:1;min-width:130px;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-family:inherit;">
+                  <button type="button" id="btnAddAmount" class="btn btn-sm btn-secondary">إضافة</button>
+                </div>
+                <div id="amountList" class="record-list" style="margin-top:8px;"></div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <div class="accordion-header" onclick="toggleAccordion(this)">
+                📝 الملاحظات
+              </div>
+              <div class="accordion-content">
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">
+                  <textarea id="inputNotes" rows="2" placeholder="اكتب ملاحظة" style="flex:1;min-width:200px;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-family:inherit;"></textarea>
+                  <button type="button" id="btnAddNote" class="btn btn-sm btn-secondary">إضافة</button>
+                </div>
+                <div id="notesList" class="record-list" style="margin-top:8px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-outline" id="btnCancelModal">إلغاء</button>
+          <button type="submit" class="btn btn-primary">حفظ السائق</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="deleteModal">
+  <div class="modal-backdrop"></div>
+  <div class="modal-content" style="max-width:440px">
+    <div class="modal-header">
+      <h2>تأكيد الحذف</h2>
+      <button class="btn-close" id="btnCloseDelete">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>هل أنت متأكد أنك تريد حذف هذا السائق وجميع بياناته وصوره نهائياً؟</p>
+      <input type="hidden" id="deleteDriverId">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" id="btnCancelDelete">إلغاء</button>
+      <button class="btn btn-danger" id="btnConfirmDelete">حذف نهائياً</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('Service Worker registered:', reg.scope))
+      .catch(err => console.log('Service Worker error:', err));
+  }
+</script>
+</body>
+</html>
